@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ko" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캔바 프레젠테이션 마스터 대시보드</title>
+    <!-- 폰트 적용 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;800&family=Jua&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans KR"', 'sans-serif'],
+                        cute: ['"Jua"', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            500: '#ec4899',
+                            600: '#db2777',
+                        },
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+        }
+        .dark .glass-effect {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* 애니메이션 */
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate { animation: slideInUp 0.3s ease-out forwards; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-primary-50 text-gray-800 dark:bg-darkBg dark:text-gray-100 transition-colors duration-300 min-h-screen">
+
+    <!-- 상단 네비게이션 바 -->
+    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- 타이틀 영역 -->
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <span class="text-2xl shrink-0">🎨</span>
+                    <div class="flex flex-col truncate">
+                        <span id="nav-title" class="font-cute text-xl sm:text-2xl text-primary-600 dark:text-primary-500 truncate">
+                            데이터 로딩중...
+                        </span>
+                    </div>
+                </div>
+                <!-- 우측 컨트롤 영역 -->
+                <div class="flex items-center space-x-3 shrink-0">
+                    <div class="hidden lg:block text-xs text-gray-500 dark:text-gray-400 font-semibold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                        👨‍💻 개발자: 가치있는 미래교육 연구소 대표 김병찬
+                    </div>
+                    <!-- 데이터 새로고침 -->
+                    <button onclick="loadData()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300" title="데이터 새로고침">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                    <!-- 다크모드 토글 -->
+                    <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                        <svg id="theme-icon" class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                    <!-- 관리자 버튼 -->
+                    <button onclick="openAdminModal()" class="flex items-center space-x-1 bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition">
+                        <svg class="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        <span>관리자</span>
+                    </button>
+                </div>
+            </div>
+            <!-- 모바일용 개발자 표시 (화면이 작을 때만 보임) -->
+            <div class="lg:hidden text-center text-[10px] text-gray-400 pb-2">
+                개발자: 가치있는 미래교육 연구소 대표 김병찬
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="pt-28 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        
+        <!-- 카테고리 탭 메뉴 -->
+        <div class="flex space-x-2 sm:space-x-4 mb-8 border-b border-gray-200 dark:border-gray-700 overflow-x-auto pb-1">
+            <button onclick="switchTab('lecture1')" id="btn-lecture1" class="tab-btn active px-4 py-2 font-bold text-lg whitespace-nowrap border-b-2 border-primary-500 text-primary-600 dark:text-primary-400 transition-colors">
+                🛠️ 캔바의 기능
+            </button>
+            <button onclick="switchTab('lecture2')" id="btn-lecture2" class="tab-btn px-4 py-2 font-bold text-lg whitespace-nowrap text-gray-500 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                📊 프레젠테이션 제작
+            </button>
+            <button onclick="switchTab('practice')" id="btn-practice" class="tab-btn px-4 py-2 font-bold text-lg whitespace-nowrap text-gray-500 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                🚀 실습 데이터
+            </button>
+            <button onclick="switchTab('reference')" id="btn-reference" class="tab-btn px-4 py-2 font-bold text-lg whitespace-nowrap text-gray-500 border-b-2 border-transparent hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                💡 참고 사이트
+            </button>
+        </div>
+
+        <!-- 탭 1: 캔바의 기능 (전체 너비 사용) -->
+        <section id="tab-lecture1" class="tab-content fade-in w-full space-y-6">
+            <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100 dark:border-gray-700 transition-colors w-full">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold font-cute text-gray-800 dark:text-gray-100 mb-2">🛠️ 캔바 기본기능 완벽 접수하기</h2>
+                    <p class="text-gray-500 dark:text-gray-400">캔바와 친해지기! 방대한 디자인 소스를 내 마음대로 다뤄보는 시간입니다. (50~60분)</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border-t-4 border-primary-500 flex flex-col justify-between h-full">
+                        <div>
+                            <h4 class="font-bold text-xl text-primary-600 dark:text-primary-400 mb-4 flex flex-col gap-1">
+                                <span class="text-sm bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 w-fit px-2 py-1 rounded-md">1. 도입 (10분)</span>
+                                <span>왜 캔바인가? 캔버스와 인사하기!</span>
+                            </h4>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">👋</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">캔버스 열기:</strong><br>
+                                        Canva.com에 접속해 로그인합니다. 화면 우측 상단의 보라색 <span class="bg-primary-500 text-white px-1.5 py-0.5 rounded text-xs font-bold whitespace-nowrap">디자인 만들기</span> 버튼을 클릭하고, <strong>[프레젠테이션 (16:9)]</strong>을 선택해 넓은 빈 도화지를 열어보세요.
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">🔍</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">작업 도구함 둘러보기:</strong><br>
+                                        화면 왼쪽의 긴 검은색 메뉴바를 보세요. [디자인], [요소], [텍스트], [업로드 항목] 등 우리가 디자인 마법을 부릴 때 사용할 아주 중요한 도구함입니다.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border-t-4 border-primary-500 flex flex-col justify-between h-full">
+                        <div>
+                            <h4 class="font-bold text-xl text-primary-600 dark:text-primary-400 mb-4 flex flex-col gap-1">
+                                <span class="text-sm bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 w-fit px-2 py-1 rounded-md">2. 전개 1 (15분)</span>
+                                <span>요소 & 글자 예쁘게 꾸미기</span>
+                            </h4>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">🎨</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">스티커와 그림 찾기:</strong><br>
+                                        왼쪽 메뉴에서 <strong>[요소]</strong>를 클릭하세요! 검색창에 <code class="bg-gray-200 dark:bg-gray-700 text-pink-500 px-1.5 py-0.5 rounded text-xs font-mono">3d</code>나 <code class="bg-gray-200 dark:bg-gray-700 text-pink-500 px-1.5 py-0.5 rounded text-xs font-mono">gradient</code> 같은 영어 키워드를 치면 세련된 그래픽이 나옵니다. 마음에 드는 걸 화면 중앙으로 끌어오세요.
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">✍️</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">멋진 글자 쓰기:</strong><br>
+                                        왼쪽 <strong>[텍스트]</strong> 탭에서 '제목 추가'를 누릅니다. 글자를 쓴 다음, 상단 메뉴의 <strong>[효과]</strong> 버튼을 눌러보세요. '네온'이나 '그림자' 효과를 주면 글자가 확 살아납니다!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="font-semibold mt-4 text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-900/30 p-3 rounded-xl text-sm border border-blue-100 dark:border-blue-800 leading-relaxed shadow-inner">
+                            💡 <strong>[미니 실습]</strong> 빈 캔버스 한가운데 내 이름(네온 효과 적용)을 적고, 나를 표현하는 아이콘 3가지를 주변에 예쁘게 배치해보세요.
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border-t-4 border-primary-500 flex flex-col justify-between h-full">
+                        <div>
+                            <h4 class="font-bold text-xl text-primary-600 dark:text-primary-400 mb-4 flex flex-col gap-1">
+                                <span class="text-sm bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 w-fit px-2 py-1 rounded-md">3. 전개 2 (15분)</span>
+                                <span>사진 다루기 & 마법의 배경 지우개</span>
+                            </h4>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">✂️</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">1초 만에 배경 없애기:</strong><br>
+                                        왼쪽 <strong>[업로드 항목]</strong>에서 내 사진을 올립니다. 도화지의 사진을 클릭하고 상단의 <strong>[사진 편집] > [배경 제거(마술봉 아이콘)]</strong>를 클릭하세요. 인물만 깔끔하게 남습니다!
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">🖼️</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">액자(프레임)에 쏙 넣기:</strong><br>
+                                        <strong>[요소]</strong> 탭 검색창에 <code>프레임</code>이라고 검색합니다. 스마트폰 모양 액자를 꺼낸 뒤, 내 사진을 마우스로 잡고 액자 안으로 끌어당겨 쏙 집어넣어 보세요.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="font-semibold mt-4 text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-900/30 p-3 rounded-xl text-sm border border-blue-100 dark:border-blue-800 leading-relaxed shadow-inner">
+                            💡 <strong>[미니 실습]</strong> 방금 배운 '배경 지우개'와 '프레임'을 활용해서 내 프로필 사진을 스마트폰 화면 안에 넣어 완성해보세요!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 탭 2: 프레젠테이션 제작 -->
+        <section id="tab-lecture2" class="tab-content hidden fade-in w-full space-y-6">
+            <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100 dark:border-gray-700 transition-colors w-full">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold font-cute text-gray-800 dark:text-gray-100 mb-2">📊 캔바 프레젠테이션 & 애니메이션 마스터</h2>
+                    <p class="text-gray-500 dark:text-gray-400">멋진 템플릿에 생동감을 불어넣어 청중의 시선을 사로잡는 발표 자료 만들기 (50~60분)</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border-t-4 border-purple-500 flex flex-col justify-between h-full">
+                        <div>
+                            <h4 class="font-bold text-xl text-purple-600 dark:text-purple-400 mb-4 flex flex-col gap-1">
+                                <span class="text-sm bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 w-fit px-2 py-1 rounded-md">1. 도입 (10분)</span>
+                                <span>전문가처럼 템플릿 고르기</span>
+                            </h4>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">📑</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">나만의 테마 찾기:</strong><br>
+                                        왼쪽 메뉴 가장 위의 <strong>[디자인]</strong> 탭을 누르세요. 검색창에 '진로 발표', '동아리 홍보' 등 여러분의 주제를 검색하면 수많은 고퀄리티 템플릿이 쏟아집니다.
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">⚡</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">한 번에 전체 적용하기:</strong><br>
+                                        마음에 드는 템플릿을 골랐다면, <strong>[n개 페이지 모두 적용]</strong> 버튼을 클릭해보세요. 1초 만에 여러 장의 슬라이드 디자인이 통째로 내 도화지에 들어옵니다.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border-t-4 border-purple-500 flex flex-col justify-between h-full">
+                        <div>
+                            <h4 class="font-bold text-xl text-purple-600 dark:text-purple-400 mb-4 flex flex-col gap-1">
+                                <span class="text-sm bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 w-fit px-2 py-1 rounded-md">2. 전개 (35분)</span>
+                                <span>움직이는 마법의 슬라이드 만들기</span>
+                            </h4>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">📈</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">데이터를 예쁜 차트로:</strong><br>
+                                        <strong>[요소]</strong> 탭에서 <code>차트</code>를 검색해 동그란 원형 차트를 넣어보세요. 차트를 더블클릭하면 표가 나오는데, 여기에 내 숫자를 적으면 그래프가 실시간으로 변합니다.
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">🎬</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">시선 집중! 매직 이동 (필살기):</strong><br>
+                                        슬라이드를 복제(우클릭 > 페이지 복제)합니다. 복제된 두 번째 슬라이드에서 글자나 그림의 크기를 키우거나 위치를 옮겨보세요. 슬라이드 사이를 눌러 <strong>[전환 효과] > [매직 이동]</strong>을 선택하면 마술처럼 스르륵~ 자연스럽게 이동합니다!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="font-semibold mt-4 text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-900/30 p-3 rounded-xl text-sm border border-blue-100 dark:border-blue-800 leading-relaxed shadow-inner">
+                            💡 <strong>[최종 실습]</strong> 나의 관심사를 주제로 한 3장짜리 슬라이드를 예쁘게 만들고, 슬라이드 간에 '매직 이동' 효과를 꼭 걸어보세요!
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border-t-4 border-purple-500 flex flex-col justify-between h-full">
+                        <div>
+                            <h4 class="font-bold text-xl text-purple-600 dark:text-purple-400 mb-4 flex flex-col gap-1">
+                                <span class="text-sm bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 w-fit px-2 py-1 rounded-md">3. 정리 (5분)</span>
+                                <span>선생님께 제출하고 자랑하기</span>
+                            </h4>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-4">
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">💾</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">파일로 저장하기:</strong><br>
+                                        우측 상단 하얀색 <strong>[공유] > [다운로드]</strong>를 누르고, 파일 형식을 <strong>[PDF 표준]</strong>으로 바꿔서 내 컴퓨터나 태블릿에 저장합니다.
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <span class="mr-2 shrink-0 mt-0.5 text-lg">🔗</span>
+                                    <div class="leading-relaxed">
+                                        <strong class="text-gray-800 dark:text-gray-200">링크로 바로 제출하기:</strong><br>
+                                        우측 상단 <strong>[공유]</strong> 메뉴에서 협업 링크 설정을 <strong>[링크가 있는 모든 사용자]</strong>로 바꿉니다. 그리고 [링크 복사]를 눌러 선생님이 알려주신 제출 공간에 붙여넣기 하면 끝!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h5 class="font-bold text-sm text-gray-800 dark:text-gray-200 mb-3 flex items-center"><span class="text-lg mr-1">🌟</span> 알면 폼나는 캔바 1초 단축키</h5>
+                            <div class="flex flex-col space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <kbd class="bg-white dark:bg-gray-900 px-2 py-1 rounded-md text-sm font-mono font-bold text-gray-800 dark:text-gray-200 shadow-sm border border-gray-300 dark:border-gray-600 w-8 text-center">C</kbd>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">동그란 원 그리기 (Circle)</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <kbd class="bg-white dark:bg-gray-900 px-2 py-1 rounded-md text-sm font-mono font-bold text-gray-800 dark:text-gray-200 shadow-sm border border-gray-300 dark:border-gray-600 w-8 text-center">R</kbd>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">네모난 사각형 그리기 (Rectangle)</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <kbd class="bg-white dark:bg-gray-900 px-2 py-1 rounded-md text-sm font-mono font-bold text-gray-800 dark:text-gray-200 shadow-sm border border-gray-300 dark:border-gray-600 w-8 text-center">T</kbd>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">글자 입력창 바로 띄우기 (Text)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 탭 2: 실습 데이터 (반응형 4열 그리드) -->
+        <section id="tab-practice" class="tab-content hidden fade-in w-full">
+            <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700 min-h-[500px]">
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold font-cute mb-1">🚀 학생 배포용 실습 데이터</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">클릭하여 데이터를 복사하거나 관련 사이트로 즉시 이동하세요.</p>
+                    </div>
+                </div>
+                
+                <!-- 실습 데이터 리스트 그리드 (1열 -> 2열 -> 3열 -> 4열) -->
+                <div id="practice-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <!-- 로딩 스켈레톤 -->
+                    <div class="animate-pulse bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                        <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                        <div class="h-20 bg-gray-200 dark:bg-gray-700 rounded w-full mb-3"></div>
+                        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 탭 3: 참고 사이트 (반응형 4열 그리드) -->
+        <section id="tab-reference" class="tab-content hidden fade-in w-full">
+            <div class="bg-white dark:bg-darkCard rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700 min-h-[500px]">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold font-cute mb-1 text-blue-600 dark:text-blue-400">💡 추천 참고 사이트</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">디자인 영감을 얻거나 무료 리소스를 다운받을 수 있는 사이트 모음입니다.</p>
+                </div>
+                
+                <!-- 참고 사이트 리스트 그리드 -->
+                <div id="reference-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <!-- 로딩 스켈레톤 -->
+                    <div class="animate-pulse bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                        <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                        <div class="h-10 bg-blue-100 dark:bg-blue-900/50 rounded w-full"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 커스텀 모달 (관리자 인증) -->
+    <div id="admin-modal" class="fixed inset-0 z-[100] hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAdminModal()"></div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 relative z-10 transform scale-95 transition-transform duration-200" id="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">🔒 관리자 인증</h3>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">구글 시트 데이터 원본에 접근하려면 설정된 인증번호를 입력하세요.</p>
+            <input type="password" id="admin-pin-input" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white mb-2" placeholder="인증번호 입력" onkeypress="handleEnter(event)">
+            <p id="admin-error" class="text-red-500 text-xs hidden mb-4">인증번호가 일치하지 않습니다.</p>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeAdminModal()" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">취소</button>
+                <button onclick="verifyAdmin()" class="px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 컨테이너 -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // --- 전역 변수 및 설정 ---
+        const SHEET_ID = '1U3Nw3ICP4J4F_-XO_9IC6NxkiPy21gap_t_gAMzVDIg';
+        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+        let adminPinCode = ""; 
+        let isDarkMode = false;
+
+        // --- 탭 전환 로직 ---
+        function switchTab(tabId) {
+            // 모든 탭 컨텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('fade-in'); // 애니메이션 리셋
+            });
+            // 선택한 탭 보이기 및 애니메이션 적용
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            targetTab.classList.remove('hidden');
+            // 약간의 딜레이 후 애니메이션 클래스 추가 (리플로우 방지)
+            setTimeout(() => targetTab.classList.add('fade-in'), 10);
+            
+            // 탭 버튼 스타일 초기화
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('text-primary-600', 'border-primary-500', 'dark:text-primary-400');
+                el.classList.add('text-gray-500', 'border-transparent');
+            });
+            // 선택한 탭 버튼 스타일 강조
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.classList.remove('text-gray-500', 'border-transparent');
+            activeBtn.classList.add('text-primary-600', 'border-primary-500', 'dark:text-primary-400');
+        }
+
+        // --- 다크모드 관리 ---
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            
+            if (isDarkMode) {
+                html.classList.add('dark');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+            } else {
+                html.classList.remove('dark');
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+            }
+        }
+
+        // --- 구글 시트 데이터 패치 (GViz API 활용) ---
+        async function fetchSheetData(sheetName) {
+            // headers=1 파라미터를 추가하여 1행은 무조건 헤더로 처리하고, rows[0]부터 실제 데이터(2행)가 되도록 강제합니다.
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheetName)}`;
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                const jsonString = text.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\)/)[1];
+                const data = JSON.parse(jsonString);
+                return data.table.rows;
+            } catch (error) {
+                console.error(`Error fetching sheet [${sheetName}]:`, error);
+                return null;
+            }
+        }
+
+        // --- 메인 데이터 로드 ---
+        async function loadData() {
+            const titleEl = document.getElementById('nav-title');
+            const practiceListEl = document.getElementById('practice-list');
+            const refListEl = document.getElementById('reference-list');
+            
+            // 초기화
+            practiceListEl.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">데이터를 불러오는 중입니다...</div>';
+            refListEl.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">데이터를 불러오는 중입니다...</div>';
+
+            try {
+                // 1. '설정' 시트 데이터 로드
+                const settingRows = await fetchSheetData('설정');
+                if (settingRows && settingRows.length > 0) {
+                    const row = settingRows[0]; // headers=1 설정으로 인해 rows[0]이 구글시트의 2행이 됩니다.
+                    adminPinCode = row.c[0]?.v != null ? String(row.c[0].v) : "";
+                    const targetGroup = row.c[1]?.v != null ? String(row.c[1].v) : "대상 미정";
+                    const lectureName = row.c[2]?.v != null ? String(row.c[2].v) : "캔바 강의";
+                    
+                    // 네비게이션 타이틀 및 브라우저 탭 타이틀 실시간 반영
+                    titleEl.innerText = `[${targetGroup}] ${lectureName}`;
+                    document.title = `[${targetGroup}] ${lectureName} - 대시보드`; 
+                }
+
+                // 2. '실습데이터' 시트 데이터 로드
+                const practiceRows = await fetchSheetData('실습데이터');
+                practiceListEl.innerHTML = ''; 
+
+                if (practiceRows && practiceRows.length > 0) {
+                    // headers=1로 인해 이미 헤더가 제외되었으므로 slice(1) 없이 전체 순회합니다.
+                    practiceRows.forEach((row) => {
+                        const title = row.c[0]?.v;
+                        const dataVal = row.c[1]?.v;
+                        
+                        if (!title || !dataVal) return; 
+                        
+                        const isUrl = String(dataVal).startsWith('http://') || String(dataVal).startsWith('https://');
+                        const card = document.createElement('div');
+                        card.className = "bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-5 flex flex-col justify-between h-full border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all";
+                        
+                        let contentHtml = `<h4 class="font-bold text-gray-800 dark:text-gray-100 mb-3 text-lg">${title}</h4>`;
+                        
+                        if (isUrl) {
+                            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(dataVal)}&color=000000&bgcolor=ffffff`;
+                            contentHtml += `
+                                <div class="flex flex-col flex-grow justify-between">
+                                    <div class="flex justify-center mb-4 bg-white p-2 rounded-xl shadow-sm self-center">
+                                        <img src="${qrUrl}" alt="QR Code" class="w-24 h-24 object-cover">
+                                    </div>
+                                    <p class="text-xs text-blue-500 truncate mb-3 text-center">${dataVal}</p>
+                                    <a href="${dataVal}" target="_blank" class="mt-auto w-full inline-flex items-center justify-center bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-200 dark:hover:bg-blue-800 transition">
+                                        사이트 바로가기
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                    </a>
+                                </div>
+                            `;
+                        } else {
+                            contentHtml += `
+                                <div class="flex flex-col flex-grow justify-between">
+                                    <div class="bg-white dark:bg-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600 mb-4 h-full">
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">${dataVal}</p>
+                                    </div>
+                                    <button onclick="copyToClipboard('${dataVal.replace(/'/g, "\\'")}')" class="mt-auto w-full flex items-center justify-center space-x-2 bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-700 dark:hover:bg-white transition shadow-sm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                        <span>내용 복사하기</span>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        card.innerHTML = contentHtml;
+                        practiceListEl.appendChild(card);
+                    });
+                } else {
+                    practiceListEl.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">실습 데이터가 없습니다. 구글 시트를 확인하세요.</div>';
+                }
+
+                // 3. '참고사이트' 시트 데이터 로드
+                const refRows = await fetchSheetData('참고사이트');
+                refListEl.innerHTML = ''; 
+
+                if (refRows && refRows.length > 0) {
+                    // headers=1로 인해 헤더 제외됨
+                    refRows.forEach((row) => {
+                        const title = row.c[0]?.v;
+                        const link = row.c[1]?.v;
+                        
+                        if (!title || !link) return; 
+                        
+                        const card = document.createElement('div');
+                        card.className = "bg-white dark:bg-gray-800 rounded-2xl p-5 border border-blue-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between h-full";
+                        
+                        card.innerHTML = `
+                            <div>
+                                <div class="w-10 h-10 bg-blue-50 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                </div>
+                                <h4 class="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-2">${title}</h4>
+                            </div>
+                            <a href="${link}" target="_blank" class="mt-4 w-full flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-900 py-2 rounded-xl text-sm font-bold hover:bg-blue-100 dark:hover:bg-gray-700 transition">
+                                사이트 열기
+                            </a>
+                        `;
+                        refListEl.appendChild(card);
+                    });
+                } else {
+                    refListEl.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">등록된 참고 사이트가 없습니다.</div>';
+                }
+                
+                showToast("데이터를 성공적으로 불러왔습니다.");
+                
+            } catch (error) {
+                showToast("데이터 로드 실패. 시트 주소나 권한을 확인하세요.", "error");
+                practiceListEl.innerHTML = '<div class="col-span-full text-center py-10 text-red-500 text-sm">데이터를 가져오지 못했습니다.</div>';
+                refListEl.innerHTML = '<div class="col-span-full text-center py-10 text-red-500 text-sm">데이터를 가져오지 못했습니다.</div>';
+            }
+        }
+
+        // --- 관리자 모달 제어 ---
+        const modal = document.getElementById('admin-modal');
+        const modalContent = document.getElementById('modal-content');
+        const pinInput = document.getElementById('admin-pin-input');
+        const errorMsg = document.getElementById('admin-error');
+
+        function openAdminModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+            pinInput.value = '';
+            errorMsg.classList.add('hidden');
+            pinInput.focus();
+        }
+
+        function closeAdminModal() {
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function verifyAdmin() {
+            if (pinInput.value === adminPinCode) {
+                window.open(SHEET_URL, '_blank');
+                closeAdminModal();
+                showToast("인증되었습니다. 데이터 시트로 이동합니다.");
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') verifyAdmin();
+        }
+
+        // --- 클립보드 복사 ---
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if(successful) {
+                    showToast('성공적으로 복사되었습니다! 🎉');
+                } else {
+                    showToast('복사에 실패했습니다.', 'error');
+                }
+            } catch (err) {
+                showToast('브라우저에서 복사를 지원하지 않습니다.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // --- 커스텀 토스트 알림 ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-red-500 text-white';
+            toast.className = `toast-animate px-4 py-3 rounded-xl shadow-xl text-sm font-bold flex items-center space-x-2 ${bgColor}`;
+            
+            const icon = type === 'success' 
+                ? '<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
+                : '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                
+            toast.innerHTML = `${icon}<span>${message}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(100%)';
+                toast.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // --- 초기화 ---
+        window.onload = () => {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                toggleTheme();
+            }
+            loadData();
+        };
+
+    </script>
+</body>
+</html>
